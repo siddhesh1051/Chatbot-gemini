@@ -1,4 +1,5 @@
 import { connectToDatabase } from "@/lib/mongodb";
+import { ErrorResponse } from "@/types";
 import { NextResponse } from "next/server";
 
 export async function GET(
@@ -34,7 +35,7 @@ export async function GET(
 
     return NextResponse.json({ messages, summary });
   } catch (error) {
-    console.error("Error fetching chat:", error.message);
+    console.error("Error fetching chat:", (error as ErrorResponse).message);
     return new NextResponse(
       JSON.stringify({ error: "Internal server error" }),
       {

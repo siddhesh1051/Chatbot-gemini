@@ -1,5 +1,3 @@
-"use client";
-
 import Image from "next/image";
 import React, { useState, useEffect, useRef, FormEvent } from "react";
 import ReactMarkdown from "react-markdown";
@@ -35,7 +33,6 @@ export default function ChatPage({ chatId }: { chatId: string }) {
   const [initialLoadComplete, setInitialLoadComplete] =
     useState<boolean>(false);
 
-  // const chatBoxRef = useRef<HTMLDivElement>(null);
   const topSentinelRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const bottomDivRef = useRef<HTMLDivElement>(null);
@@ -48,10 +45,6 @@ export default function ChatPage({ chatId }: { chatId: string }) {
   } = useSpeechRecognition();
 
   useEffect(() => {
-    // if (initialLoadComplete && bottomDivRef.current)
-    //   bottomDivRef.current?.scrollIntoView({
-    //     behavior: "smooth",
-    //   });
     fetchMessages(page);
   }, [page]);
 
@@ -106,7 +99,14 @@ export default function ChatPage({ chatId }: { chatId: string }) {
         setHasMore(false);
       }
 
-      setMessages((prev) => [...data.messages, ...prev]);
+      setMessages((prev) => {
+        const newMessages = [...data.messages, ...prev];
+        return newMessages.filter(
+          (message, index, self) =>
+            index ===
+            self.findIndex((t) => t.messageText === message.messageText)
+        );
+      });
       setSummary(data.summary);
 
       if (page === 1) {
@@ -137,7 +137,6 @@ export default function ChatPage({ chatId }: { chatId: string }) {
   const handleLoadMore = () => {
     if (hasMore && !loadingMore) {
       setPage((prev) => prev + 1);
-      fetchMessages(page + 1);
     }
   };
 
@@ -284,16 +283,13 @@ export default function ChatPage({ chatId }: { chatId: string }) {
 
   return (
     <div className="container mx-auto max-w-5xl min-h-screen flex flex-col ">
-      {!isLoading ? (
+      {!isLoading && (
         <div className="fixed md:block hidden top-2 right-2 p-4 max-w-sm border-2 border-emerald-200 bg-[#f5fffa] shadow-lg shadow-emerald-100 rounded-xl z-10">
           <h3 className="font-bold mb-2 text-lg">Summary</h3>
           <p className="text-sm">{summary}</p>
         </div>
-      ) : (
-        <div>He;;p</div>
       )}
       <div
-        // ref={chatBoxRef}
         className="chat-box rounded-md flex-grow flex flex-col overflow-y-auto"
         style={{ position: "relative" }}
       >
@@ -303,7 +299,7 @@ export default function ChatPage({ chatId }: { chatId: string }) {
             <InfiniteLoader />
           </div>
         )}
-        {messages?.map((message, index) => (
+        {messages.map((message, index) => (
           <div
             key={index}
             className={`flex items-start space-x-3 my-4 ${
@@ -335,9 +331,6 @@ export default function ChatPage({ chatId }: { chatId: string }) {
             </div>
           </div>
         ))}
-        {/* {isLoading && !loadingMore && (
-          <div className="text-center text-gray-500 py-4">Loading...</div>
-        )} */}
       </div>
       <div ref={bottomDivRef} />
       <form

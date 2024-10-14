@@ -43,15 +43,21 @@ export default function ChatPage({ chatId }: { chatId: string }) {
 
   const {
     transcript: speechTranscript,
+    listening,
     resetTranscript,
     browserSupportsSpeechRecognition,
   } = useSpeechRecognition();
 
   useEffect(() => {
-    // if (initialLoadComplete && bottomDivRef.current)
-    //   bottomDivRef.current?.scrollIntoView({
-    //     behavior: "smooth",
-    //   });
+    setUserPrompt(speechTranscript);
+  }, [speechTranscript]);
+
+  useEffect(() => {
+    setIsRecording(listening);
+    handleStopListening();
+  }, [listening]);
+
+  useEffect(() => {
     fetchMessages(page);
   }, [page]);
 
@@ -205,81 +211,83 @@ export default function ChatPage({ chatId }: { chatId: string }) {
       setIsLoading(false);
     }
   };
+  const handleStopListening = async () => {
+    if (!speechTranscript.trim()) return;
 
-  const toggleRecording = async () => {
-    setIsRecording(!isRecording);
+    console.log("Stopped listening, transcript:", speechTranscript);
 
-    if (isRecording) {
-      SpeechRecognition.stopListening();
-      if (speechTranscript) {
-        console.log("Transcript:", speechTranscript);
+    const newMessages: Message[] = [
+      ...messages,
+      { role: "human", messageText: speechTranscript },
+    ];
 
-        const newMessages: Message[] = [
-          ...messages,
-          { role: "human", messageText: speechTranscript },
-        ];
-        setMessages(newMessages);
-        setIsLoading(true);
+    setMessages(newMessages);
+    setIsLoading(true);
+    setUserPrompt("");
 
-        try {
-          const response = await fetch("/api/chat", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ userPrompt: speechTranscript, chatId }),
-          });
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ userPrompt: speechTranscript, chatId }),
+      });
 
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
-          const reader = response.body?.getReader();
-          if (!reader) throw new Error("Response body is null");
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error("Response body is null");
 
-          const decoder = new TextDecoder();
-          let aiResponse = "";
+      const decoder = new TextDecoder();
+      let aiResponse = "";
+      setMessages((prev) => [...prev, { role: "ai", messageText: aiResponse }]);
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+
+        if (chunk.startsWith("\nSUMMARY:")) {
+          const newSummary = chunk.slice(9);
+          setSummary(newSummary);
+        } else {
+          aiResponse += chunk;
           setMessages((prev) => [
-            ...prev,
+            ...prev.slice(0, -1),
             { role: "ai", messageText: aiResponse },
           ]);
-
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-
-            const chunk = decoder.decode(value);
-
-            if (chunk.startsWith("\nSUMMARY:")) {
-              const newSummary = chunk.slice(9);
-              setSummary(newSummary);
-            } else {
-              aiResponse += chunk;
-              setMessages((prev) => [
-                ...prev.slice(0, -1),
-                { role: "ai", messageText: aiResponse },
-              ]);
-            }
-          }
-        } catch (error) {
-          console.error("Error:", error);
-          setMessages((prev) => [
-            ...prev,
-            {
-              role: "error",
-              messageText: "An error occurred while fetching the response.",
-            },
-          ]);
-        } finally {
-          setIsLoading(false);
         }
-
-        resetTranscript();
       }
+    } catch (error) {
+      console.error("Error:", error);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "error",
+          messageText: "An error occurred while fetching the response.",
+        },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
+
+    resetTranscript();
+  };
+
+  const toggleRecording = async () => {
+    if (isRecording) {
+      SpeechRecognition.stopListening();
+      handleStopListening();
     } else {
       console.log("Starting recording...");
       SpeechRecognition.startListening({ continuous: false });
     }
+
+    setIsRecording(!isRecording);
   };
 
   return (
@@ -290,7 +298,7 @@ export default function ChatPage({ chatId }: { chatId: string }) {
           <p className="text-sm">{summary}</p>
         </div>
       ) : (
-        <div>He;;p</div>
+        <div></div>
       )}
       <div
         // ref={chatBoxRef}

@@ -292,17 +292,12 @@ export default function ChatPage({ chatId }: { chatId: string }) {
 
   return (
     <div className="container mx-auto max-w-5xl min-h-screen flex flex-col ">
-      {!isLoading ? (
-        <div className="fixed md:block hidden top-2 right-2 p-4 max-w-sm border-2 border-emerald-200 bg-[#f5fffa] shadow-lg shadow-emerald-100 rounded-xl z-10">
-          <h3 className="font-bold mb-2 text-lg">Summary</h3>
-          <p className="text-sm">{summary}</p>
-        </div>
-      ) : (
-        <div></div>
-      )}
+      <div className="fixed md:block hidden top-2 right-2 p-4 max-w-sm border-2 border-emerald-200 bg-[#f5fffa] shadow-lg shadow-emerald-100 rounded-xl z-10">
+        <h3 className="font-bold mb-2 text-lg">Summary</h3>
+        <p className="text-sm">{summary}</p>
+      </div>
       <div
-        // ref={chatBoxRef}
-        className="chat-box rounded-md flex-grow flex flex-col overflow-y-auto"
+        className="chat-box rounded-md flex-grow flex flex-col overflow-y-auto px-2 md:px-0"
         style={{ position: "relative" }}
       >
         <div ref={topSentinelRef} />
@@ -325,15 +320,15 @@ export default function ChatPage({ chatId }: { chatId: string }) {
                 alt={message.role}
                 height={40}
                 width={40}
-                className="my-2"
+                className="my-2 md:flex hidden"
               />
             )}
             <div
-              className={`p-3 rounded-xl my-2 w-fit shadow-xl shadow-emerald-50 ${
+              className={`p-3 rounded-xl my-2 w-fit shadow-xl shadow-emerald-50 overflow-x-auto ${
                 message.role === "human"
                   ? "bg-gradient-to-t from-green-200 to-green-50 text-black"
                   : message.role === "error"
-                  ? "bg-red-500 text-white max-w-[80%]"
+                  ? "bg-red-500 text-white md:max-w-[80%] max-w-full"
                   : "bg-[#fcfffd] max-w-[100%] border-2 border-green-200"
               }`}
             >
@@ -343,14 +338,11 @@ export default function ChatPage({ chatId }: { chatId: string }) {
             </div>
           </div>
         ))}
-        {/* {isLoading && !loadingMore && (
-          <div className="text-center text-gray-500 py-4">Loading...</div>
-        )} */}
       </div>
       <div ref={bottomDivRef} />
       <form
         onSubmit={handleSubmit}
-        className="flex items-center space-x-4 pb-4 pt-6 bg-[#f9fffc] sticky bottom-0"
+        className="flex items-center space-x-4 pb-4 pt-6 bg-[#f9fffc] sticky bottom-0 px-4"
       >
         <div className="flex w-full shadow-md border border-emerald-300 rounded-full py-2 px-4 focus:outline-none focus:ring-2 focus:ring-emerald-500">
           <input
@@ -370,11 +362,15 @@ export default function ChatPage({ chatId }: { chatId: string }) {
         </div>
         <button
           type="submit"
-          className="bg-gradient-to-t from-emerald-500 to-emerald-100 shadow-2xl shadow-emerald-400 text-black px-6 py-2 rounded-full hover:bg-blue-600 transition duration-300 ease-in-out flex gap-2 items-center justify-center font-medium text-xl disabled:opacity-50"
+          className="bg-gradient-to-t from-emerald-500 to-emerald-100 shadow-2xl shadow-emerald-400 text-black md:px-6 px-3 py-2 rounded-full hover:bg-blue-600 transition duration-300 ease-in-out flex gap-2 items-center justify-center font-medium text-xl disabled:opacity-50"
           disabled={isLoading || !userPrompt.trim()}
         >
-          <span>Send</span>
-          <Image src={sendIcon} alt="send" width={20} height={20} />
+          <span className="md:flex hidden">Send</span>
+          <Image
+            src={sendIcon}
+            alt="send"
+            className="h-[40px] w-[40px] md:h-[20px] md:w-[20px]"
+          />
         </button>
       </form>
     </div>
